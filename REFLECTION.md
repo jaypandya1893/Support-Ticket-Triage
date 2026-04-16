@@ -6,7 +6,11 @@
 
 ### 6. What vibe coding tool(s) did you use?
 
-I used **Claude Code** — it runs inside VS Code and it's more than just autocomplete. It can actually read my files, write code, run commands, and understand the whole project. So I could say "build this endpoint" and it would do it, not just give me a snippet to copy paste.
+I used two tools — **Claude Code** and **OpenAI Codex**.
+
+Claude Code runs inside VS Code and understands the whole project. I could say "build this endpoint" and it would actually do it — read the files, write the code, run commands. Not just suggest a snippet.
+
+Codex I used mostly for smaller things — quick completions, filling in repetitive parts, and getting a second take on logic I wasn't sure about. Good for speed, not great for anything that needs context across multiple files.
 
 ### 7. One specific moment where the tool helped
 
