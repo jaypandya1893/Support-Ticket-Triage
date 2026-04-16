@@ -6,39 +6,39 @@
 
 ### 6. What vibe coding tool(s) did you use?
 
-I used **Claude Code** — it is Anthropic's AI coding tool that runs inside VS Code. It can read and write files, run commands, and search the codebase, so I could tell it what I wanted to build and it would actually do it, not just suggest code for me to copy.
+I used **Claude Code** — it runs inside VS Code and it's more than just autocomplete. It can actually read my files, write code, run commands, and understand the whole project. So I could say "build this endpoint" and it would do it, not just give me a snippet to copy paste.
 
 ### 7. One specific moment where the tool helped
 
-**What I asked:**
+**What I asked it:**
 
-> Build the FastAPI `/process` endpoint. It should accept `ticket_text`, call `process_ticket()` from `processor.py`, and return structured JSON. Handle: missing API key (500), upstream API error (502), and parse failures (200 with error flag). Use Pydantic for request/response models.
+> Build the FastAPI `/process` endpoint. Accept `ticket_text`, call `process_ticket()` from `processor.py`, return structured JSON. Handle missing API key as 500, upstream API error as 502, and parse failures as 200 with an error flag. Use Pydantic for request/response models.
 
-**What it built:**
+**What it gave me:**
 
-It wrote the full `main.py` with three different ways to handle errors — a 500 error if the API key is missing (that is a setup problem, not a user problem), a 502 if the AI service fails (so the client knows to retry), and a "soft failure" where if the AI returns something we cannot read, we still return a usable response instead of crashing. It also added input validation on the ticket text that I had not asked for — minimum 10 characters, maximum 10,000.
+It built the full `main.py` — and it already had the three types of error handling I wanted. Missing key = 500 (setup problem). AI service down = 502 (retry later). Bad AI output = still return a 200 with a flag saying "this needs human review." It also added a character limit on the input (min 10, max 10,000) which I hadn't even asked for.
 
-**What I kept:** The three-level error handling idea and the input validation.
+**What I kept:** The error handling structure and the input limits.
 
-**What I changed:** It assumed the `GROQ_API_KEY` was already set in the environment. I added the `python-dotenv` part so it loads from the `.env` file. I also made the error message more helpful — instead of just "key not found" it now says "Add it to your .env file." I removed a `background_tasks` import it added for no reason.
+**What I changed:** It didn't load the API key from a `.env` file — it just assumed it was already in the environment. I added that. I also changed the error message to actually tell you what to do ("Add it to your .env file") instead of just saying the key is missing. Removed a random import it added that wasn't being used.
 
 ### 8. Where the tool got it wrong
 
-When it first wrote `processor.py`, it made the JSON parse error throw an HTTP 500 exception. That means if the AI returns something weird and we cannot read it, the whole request crashes with an error page.
+First version of `processor.py` — when the AI returns something we can't read, it threw a 500 error and crashed the whole request.
 
-That is the wrong behaviour. If the AI gives bad output, we should still return something useful to the agent — like "we could not process this automatically, a human needs to look at it." The system should stay running, not crash.
+That's not what I wanted. If the AI gives garbage output, the system should still work — it should return a result that says "couldn't process this, needs a human." Crashing with a 500 just breaks the agent's screen for no reason.
 
-I rewrote that part to return a proper result with `needs_escalation: true` and a message explaining what went wrong. The agent sees it clearly and can handle it manually.
+I rewrote that part myself so it returns a proper object with `needs_escalation: true` and a message explaining what failed. System stays up, agent knows what happened.
 
-**What this shows about AI coding tools:** They are good at writing code that works in the normal case. They are not as good at thinking about what happens when things go wrong. That is the part you always have to check yourself.
+**What I learned from this:** The tool is great at writing the happy path — when everything works. But it doesn't really think about what happens when things break. You have to catch that yourself.
 
 ### 9. Mental model for vibe coding on a client project
 
-**Let it handle:** Setting up boilerplate, writing repetitive code, HTML structure, Pydantic models, sample data — anything where the pattern is clear and I just need it done fast.
+I let it handle the stuff that's just time consuming but not complicated — setting up files, writing Pydantic models, HTML layout, sample data, boilerplate. Anything where I know exactly what I want but it's just boring to type out.
 
-**I take over for:** Error handling, any decision that affects the user experience ("should this be auto-sent or manual?"), and anything the tool wrote that I cannot fully explain myself.
+I take over when it's about decisions — like should this fail silently or crash loudly? Should the reply be auto-sent or manual? Those aren't code questions, they're product questions. The tool doesn't know the answer to those.
 
-My rule is simple: if I cannot read the generated code and explain why it is correct, I do not use it. The tool writes fast, but I am still responsible for what gets submitted. Using it without understanding is how you build something that looks fine but breaks in ways you did not expect.
+My personal rule: if I can't read what it wrote and explain it myself, I don't keep it. It's fast, but I'm still the one responsible for what goes in.
 
 ---
 
@@ -46,30 +46,30 @@ My rule is simple: if I cannot read the generated code and explain why it is cor
 
 ### 10. What corners did I cut?
 
-- **No login or security on the API.** Anyone who knows the URL can use it. In a real product it would need authentication.
-- **No rate limiting.** Right now one person could spam the endpoint and rack up API costs. That needs to be capped.
-- **No database.** Every result only exists in the browser response. A real system would save results so you can track trends, review past tickets, and measure accuracy.
-- **No way for agents to give feedback.** If an agent changes the category or rewrites the draft, that information just disappears. Capturing those corrections is how you improve the system over time.
-- **The draft reply is generic.** It does not know your actual product, your help articles, or your past resolutions. It writes something professional but not specific. Connecting it to real docs would make it much more useful.
-- **One category per ticket.** If a customer writes about two different problems, the AI picks one and ignores the other.
+- **No authentication** — the API is completely open. Anyone with the URL can hit it. Would need a key or login in production.
+- **No rate limiting** — someone could spam it and burn through API credits fast.
+- **No database** — results only exist in the browser. Nothing is saved. Real system would need to store tickets, results, and agent actions.
+- **No feedback from agents** — if an agent changes the category or rewrites the draft, that's just lost. You need to capture that to know if the AI is actually doing a good job.
+- **Generic replies** — the AI doesn't know the actual product so replies are professional but vague. Would be much better connected to real help docs.
+- **One topic per ticket** — if someone writes about two problems, the AI picks one and ignores the other.
 
 ### 11. First question I'd ask a real client before building anything
 
-**"When a ticket comes in as a billing issue versus a bug report — does your team actually do something different with it?"**
+**"When you see a billing ticket versus a bug ticket — do you actually do anything differently?"**
 
-If yes — they route it to different teams, different response times, different templates — then getting the category right really matters and I should design the whole prompt around those exact categories.
+If yes, great — then categorization really matters and I'd build the whole thing around getting that right.
 
-If no — agents just respond to everything the same way — then classification is not actually the problem and I should focus on making the draft reply better instead.
+If no, and agents just handle everything the same way — then I'd skip the fancy classification and just focus on making the draft reply as good as possible.
 
-I want to know this first because it is easy to build a very accurate classifier that does not actually help anyone.
+I want to ask this first because I've seen people build complicated systems that solve the wrong problem. No point making a perfect classifier if the team doesn't use the categories for anything.
 
 ### 12. What would v2 look like?
 
-In order of what I would build first:
+In order of what I'd actually build next:
 
-1. **Let agents correct mistakes** — add a thumbs up/down on the draft and a way to fix the category. Just log it for now. After a few weeks you have real data on where the AI is wrong.
-2. **Connect to your actual help docs** — so the draft reply references real articles and real solutions instead of writing something generic.
-3. **Handle tickets with multiple topics** — detect when a customer is asking about more than one thing and make sure the reply covers all of it.
-4. **Show the customer's history** — if they have emailed before, include their last few tickets so the reply is not treating them like a stranger.
-5. **Automatic ticket intake** — connect to Zendesk or Intercom via webhook so tickets flow in automatically instead of being pasted manually.
-6. **A simple dashboard** — show how often each category comes up, how often agents change the AI's answer, and where confidence is lowest. This makes the system something you can actually trust and improve.
+1. **Agent feedback** — simple thumbs up/down on the draft, and a way to fix the category if it's wrong. Just save the corrections for now, no retraining yet.
+2. **Connect to real help docs** — so the draft can say "here's our actual billing FAQ" instead of making something up.
+3. **Handle multi-topic tickets** — catch when a customer is asking about more than one thing.
+4. **Customer history** — if they've written before, pull in their last couple of tickets so the reply doesn't feel like starting from scratch.
+5. **Auto-intake from Zendesk/Intercom** — so tickets come in automatically instead of being pasted manually.
+6. **Simple dashboard** — show which categories come up most, where the AI gets it wrong, how often agents change the draft. Basically just visibility into whether it's actually working.

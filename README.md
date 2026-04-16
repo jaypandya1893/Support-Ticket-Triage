@@ -39,49 +39,49 @@ curl -X POST http://localhost:8000/process \
 
 ### 1. What is the core problem you are solving?
 
-Every support ticket takes an agent 2–3 minutes just to read, figure out what type it is, and write a first reply — before they even start solving the actual problem. If you have 300–500 tickets a day, that adds up to a lot of wasted time on work that doesn't really need a human. The real problem is not answering tickets — it is the reading and sorting part that slows everything down.
+Support agents waste a lot of time just reading a ticket, deciding what type it is, and typing a first reply — and they haven't even started fixing the problem yet. With 300–500 tickets a day, that's hours of work that honestly doesn't need a human to do it. The AI handles that boring first step so agents can jump straight to actually helping.
 
 ### 2. Workflow — ticket arrives to agent acts
 
-1. **Ticket comes in** — Customer sends an email through something like Zendesk or Intercom.
-2. **AI reads it** — One AI call looks at the ticket and gives back: what type it is, how urgent, how the customer is feeling, a short summary, a draft reply, and whether it needs escalation.
-3. **Low confidence check** — If the AI is not very sure about its answer (below 70% confidence), it still sends a draft but marks it clearly so the agent knows to double-check.
-4. **Escalation check** — If the ticket needs a senior person, it goes to a different queue with the reason attached. The draft is still included so they are not starting from scratch.
-5. **Agent reviews** — The agent sees everything laid out. They can send the draft as-is, edit it, or write their own. They always click send — the AI never sends automatically.
-6. **Done** — Customer gets a reply faster, agent spent less time on the boring part.
+1. **Ticket comes in** — Customer emails through Zendesk or Intercom.
+2. **AI looks at it** — One AI call figures out the category, urgency, how the customer is feeling, writes a short summary, drafts a reply, and says if it needs escalation.
+3. **Not sure? Flag it** — If the AI isn't very confident, it still shows the draft but puts a warning so the agent knows to double check.
+4. **Needs escalation?** — Goes to a senior agent with the reason included. Draft is still there so they don't start from zero.
+5. **Agent decides** — Agent reads the result, edits the draft if needed, and clicks send. The AI never sends on its own.
+6. **Done** — Faster reply for the customer, less boring work for the agent.
 
 ### 3. AI models/APIs — and why
 
 | Task | Choice | Why |
 |---|---|---|
-| Reading and replying to tickets | **Llama 3.3 70B via Groq** | It is free to use (14,400 requests per day), very fast (under 1 second), and it follows instructions well when you ask it to return structured JSON. |
-| Complex or escalated tickets | Same model | For a prototype at this scale, one model is enough. If accuracy becomes a problem later, we can upgrade. |
+| Classifying and drafting replies | **Llama 3.3 70B via Groq** | Free (14,400 requests/day), fast, and really good at following instructions to return clean JSON. |
+| Hard or escalated tickets | Same model | One model is fine for a prototype. Can always upgrade later if needed. |
 
-I used one single AI call per ticket instead of multiple calls — one call gives us the category, draft reply, and escalation decision all at once. Splitting it into separate calls would be slower and more expensive with no real benefit.
+I kept it to one AI call per ticket. One call returns everything — category, draft, escalation. No need to make three separate calls and wait longer for the same result.
 
-I picked Groq with Llama because it is open source, completely free for this scale, and does not have the quota problems that OpenAI and Gemini free tiers have.
+I went with Groq and Llama because it's open source and free with no surprise quota blocks, unlike OpenAI or Gemini free tiers.
 
 ### 4. Two biggest failure points in production
 
-**Problem 1: Customer writes about multiple things in one ticket**
+**Problem 1: One ticket, multiple issues**
 
-In testing, tickets are usually clean — one topic. But real customers write things like "my bill is wrong AND I can't log in AND can you also add dark mode?" The AI picks one category and writes a reply for that, ignoring the rest.
+When I tested it, tickets were simple — one problem. But real customers write messy tickets like "my payment failed, also I can't log in, also can you add this feature?" The AI picks one thing and ignores the rest.
 
-*Fix:* Ask the AI to also list any secondary topics it notices. The agent can then see everything the customer mentioned. If there are too many topics, flag it for manual review.
+*How to fix it:* Tell the AI to also mention any other topics it noticed. That way the agent sees the full picture. If there are too many issues in one ticket, just send it straight to a human.
 
-**Problem 2: AI makes up product details**
+**Problem 2: AI invents things**
 
-The AI does not know your actual product. It might write a reply mentioning features that do not exist, or promise things your team cannot do. If a customer then says "but you told me X was possible," that is a trust problem.
+The AI has no idea what your product actually does. It can write something like "you can do this in the settings menu" when that feature doesn't even exist. Customer then comes back angry saying "you told me this was possible."
 
-*Fix:* The system prompt tells the AI clearly — do not invent product names, timelines, or features. A better long-term fix is to connect it to your actual help docs so it only says things that are true. That is planned for v2.
+*How to fix it:* The prompt already tells it — don't make up features or timelines. The proper fix is connecting it to your real help docs so it only says things that are actually true. That's for v2.
 
 ### 5. What I would NOT automate
 
-**Actually sending the reply.** The AI drafts it, the agent sends it. One wrong reply going out — bad tone, wrong information, a promise you cannot keep — can damage a customer relationship. The time saved by auto-sending is not worth that risk.
+**Sending the reply.** AI writes it, human sends it. One bad reply going out can really upset a customer. Not worth the risk just to save one click.
 
-**Deciding how to handle VIP or upset customers.** The AI can flag "this customer said they are going to cancel" — but what to do about that is a human decision. Do you call them? Offer a discount? That depends on context the AI does not have.
+**Handling angry or VIP customers.** The AI can spot "this person said they're cancelling" — but what to actually do about it is a human call. Maybe you call them, maybe you offer something. The AI doesn't have enough context for that.
 
-**Legal or compliance tickets.** Anything about GDPR, data deletion, security issues, or legal complaints should go straight to the right person at the company, not get an AI-drafted reply.
+**Legal stuff.** GDPR requests, data deletion, anything that sounds legal — those should go directly to the right person, not get an AI reply.
 
 ---
 
