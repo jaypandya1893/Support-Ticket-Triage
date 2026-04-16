@@ -52,14 +52,13 @@ Support agents waste a lot of time just reading a ticket, deciding what type it 
 
 ### 3. What AI model(s) or APIs would you use, and why?
 
-| Task | Choice | Why |
-|---|---|---|
-| Classifying and drafting replies | **Llama 3.3 70B via Groq** | Free (14,400 requests/day), fast, and really good at following instructions to return clean JSON. |
-| Hard or escalated tickets | Same model | One model is fine for a prototype. Can always upgrade later if needed. |
+I used **Llama 3.3 70B via Groq** for everything — classifying the ticket, writing the draft reply, and deciding if it needs escalation.
 
-I kept it to one AI call per ticket. One call returns everything — category, draft, escalation. No need to make three separate calls and wait longer for the same result.
+I picked Groq because it's free (14,400 requests a day), fast, and Llama 3.3 is really good at following instructions when you tell it to return JSON. OpenAI and Gemini both have free tiers but they kept hitting quota limits during testing. Groq just worked without any of that.
 
-I went with Groq and Llama because it's open source and free with no surprise quota blocks, unlike OpenAI or Gemini free tiers.
+I kept it to one API call per ticket. That one call gives back everything — category, urgency, draft, escalation flag. No reason to make separate calls for each thing, it would just be slower and cost more for the same result.
+
+For a prototype at this scale, one model is enough. If output quality becomes an issue later, switching to a stronger model is a one-line change.
 
 ### 4. What are the 2 biggest failure points in production, and how would you handle them?
 
