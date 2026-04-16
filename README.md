@@ -41,7 +41,7 @@ curl -X POST http://localhost:8000/process \
 
 Support agents waste a lot of time just reading a ticket, deciding what type it is, and typing a first reply — and they haven't even started fixing the problem yet. With 300–500 tickets a day, that's hours of work that honestly doesn't need a human to do it. The AI handles that boring first step so agents can jump straight to actually helping.
 
-### 2. Workflow — ticket arrives to agent acts
+### 2. Walk through your workflow step by step.
 
 1. **Ticket comes in** — Customer emails through Zendesk or Intercom.
 2. **AI looks at it** — One AI call figures out the category, urgency, how the customer is feeling, writes a short summary, drafts a reply, and says if it needs escalation.
@@ -50,7 +50,7 @@ Support agents waste a lot of time just reading a ticket, deciding what type it 
 5. **Agent decides** — Agent reads the result, edits the draft if needed, and clicks send. The AI never sends on its own.
 6. **Done** — Faster reply for the customer, less boring work for the agent.
 
-### 3. AI models/APIs — and why
+### 3. What AI model(s) or APIs would you use, and why?
 
 | Task | Choice | Why |
 |---|---|---|
@@ -61,7 +61,7 @@ I kept it to one AI call per ticket. One call returns everything — category, d
 
 I went with Groq and Llama because it's open source and free with no surprise quota blocks, unlike OpenAI or Gemini free tiers.
 
-### 4. Two biggest failure points in production
+### 4. What are the 2 biggest failure points in production, and how would you handle them?
 
 **Problem 1: One ticket, multiple issues**
 
@@ -75,7 +75,7 @@ The AI has no idea what your product actually does. It can write something like 
 
 *How to fix it:* The prompt already tells it — don't make up features or timelines. The proper fix is connecting it to your real help docs so it only says things that are actually true. That's for v2.
 
-### 5. What I would NOT automate
+### 5. What would you NOT automate in this system, and why?
 
 **Sending the reply.** AI writes it, human sends it. One bad reply going out can really upset a customer. Not worth the risk just to save one click.
 

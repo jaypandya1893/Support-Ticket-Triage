@@ -12,7 +12,7 @@ Claude Code runs inside VS Code and understands the whole project. I could say "
 
 Codex I used mostly for smaller things — quick completions, filling in repetitive parts, and getting a second take on logic I wasn't sure about. Good for speed, not great for anything that needs context across multiple files.
 
-### 7. One specific moment where the tool helped
+### 7. Show us one specific moment where the tool helped.
 
 **What I asked it:**
 
@@ -26,7 +26,7 @@ It built the full `main.py` — and it already had the three types of error hand
 
 **What I changed:** It didn't load the API key from a `.env` file — it just assumed it was already in the environment. I added that. I also changed the error message to actually tell you what to do ("Add it to your .env file") instead of just saying the key is missing. Removed a random import it added that wasn't being used.
 
-### 8. Where the tool got it wrong
+### 8. Where did the tool get it wrong or fall short?
 
 First version of `processor.py` — when the AI returns something we can't read, it threw a 500 error and crashed the whole request.
 
@@ -36,7 +36,7 @@ I rewrote that part myself so it returns a proper object with `needs_escalation:
 
 **What I learned from this:** The tool is great at writing the happy path — when everything works. But it doesn't really think about what happens when things break. You have to catch that yourself.
 
-### 9. Mental model for vibe coding on a client project
+### 9. What is your mental model for vibe coding on a client project? When do you let it drive, and when do you take the wheel?
 
 I let it handle the stuff that's just time consuming but not complicated — setting up files, writing Pydantic models, HTML layout, sample data, boilerplate. Anything where I know exactly what I want but it's just boring to type out.
 
@@ -48,7 +48,7 @@ My personal rule: if I can't read what it wrote and explain it myself, I don't k
 
 ## Part 04 — Reflection
 
-### 10. What corners did I cut?
+### 10. What corners did you cut in the prototype that you would fix before going to production?
 
 - **No authentication** — the API is completely open. Anyone with the URL can hit it. Would need a key or login in production.
 - **No rate limiting** — someone could spam it and burn through API credits fast.
@@ -57,7 +57,7 @@ My personal rule: if I can't read what it wrote and explain it myself, I don't k
 - **Generic replies** — the AI doesn't know the actual product so replies are professional but vague. Would be much better connected to real help docs.
 - **One topic per ticket** — if someone writes about two problems, the AI picks one and ignores the other.
 
-### 11. First question I'd ask a real client before building anything
+### 11. If this were a real client engagement, what is the first question you would ask before building anything?
 
 **"When you see a billing ticket versus a bug ticket — do you actually do anything differently?"**
 
@@ -67,7 +67,7 @@ If no, and agents just handle everything the same way — then I'd skip the fanc
 
 I want to ask this first because I've seen people build complicated systems that solve the wrong problem. No point making a perfect classifier if the team doesn't use the categories for anything.
 
-### 12. What would v2 look like?
+### 12. What would a v2 look like? What would you add next, and in what order?
 
 In order of what I'd actually build next:
 
