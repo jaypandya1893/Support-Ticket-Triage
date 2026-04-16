@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Support Ticket Triage</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+           background: #f5f5f5; color: #1a1a1a; padding: 2rem; }
+    h1 { font-size: 1.4rem; font-weight: 600; margin-bottom: 0.25rem; }
+    .subtitle { color: #666; font-size: 0.875rem; margin-bottom: 2rem; }
+    .card { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px;
+            padding: 1.5rem; margin-bottom: 1.5rem; }
+    label { display: block; font-size: 0.8rem; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.05em;
+            color: #555; margin-bottom: 0.4rem; }
+    select, textarea { width: 100%; border: 1px solid #d0d0d0; border-radius: 6px;
+                       padding: 0.6rem 0.75rem; font-size: 0.9rem; font-family: inherit;
+                       outline: none; transition: border-color 0.15s; }
+    select:focus, textarea:focus { border-color: #3b82f6; }
+    textarea { resize: vertical; min-height: 140px; line-height: 1.5; }
+    button { background: #3b82f6; color: #fff; border: none; border-radius: 6px;
+             padding: 0.65rem 1.4rem; font-size: 0.9rem; font-weight: 600;
+             cursor: pointer; transition: background 0.15s; }
+    button:hover { background: #2563eb; }
+    button:disabled { background: #93c5fd; cursor: not-allowed; }
+    .gap { margin-top: 1rem; }
+
+    /* Result panel */
+    #result { display: none; }
+    .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 4px;
+             font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+             letter-spacing: 0.04em; }
+    .badge-billing     { background: #dbeafe; color: #1d4ed8; }
+    .badge-bug_report  { background: #fee2e2; color: #b91c1c; }
+    .badge-feature_request { background: #d1fae5; color: #065f46; }
+    .badge-account_issue   { background: #fef3c7; color: #92400e; }
+    .badge-other       { background: #f3f4f6; color: #374151; }
+    .badge-critical { background: #b91c1c; color: #fff; }
+    .badge-high     { background: #f97316; color: #fff; }
+    .badge-medium   { background: #eab308; color: #fff; }
+    .badge-low      { background: #22c55e; color: #fff; }
+    .badge-escalate { background: #7c3aed; color: #fff; }
+    .badge-ok       { background: #e5e7eb; color: #374151; }
+
+    .meta-row { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;
+                margin-bottom: 1rem; }
+    .summary-text { font-size: 0.95rem; color: #374151; margin-bottom: 1rem;
+                    padding: 0.75rem; background: #f9fafb; border-radius: 6px; }
+    .section-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+                     letter-spacing: 0.05em; color: #9ca3af; margin-bottom: 0.5rem; }
+    .draft-box { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px;
+                 padding: 1rem; font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap; }
+    .escalation-box { background: #fdf4ff; border: 1px solid #e9d5ff; border-radius: 6px;
+                      padding: 0.75rem; font-size: 0.875rem; color: #6d28d9; }
+    .flags-box { background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px;
+                 padding: 0.75rem; font-size: 0.875rem; color: #92400e; }
+    .tags { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+    .tag { background: #e5e7eb; color: #374151; border-radius: 4px;
+           padding: 0.15rem 0.5rem; font-size: 0.78rem; }
+    .confidence-bar { height: 6px; background: #e5e7eb; border-radius: 3px;
+                      margin-top: 0.25rem; overflow: hidden; }
+    .confidence-fill { height: 100%; background: #3b82f6; border-radius: 3px; }
+    .json-toggle { font-size: 0.78rem; color: #3b82f6; cursor: pointer;
+                   background: none; border: none; padding: 0; margin-top: 0.75rem; }
+    .json-toggle:hover { text-decoration: underline; }
+    pre.json-raw { display: none; background: #1e1e1e; color: #d4d4d4;
+                   border-radius: 6px; padding: 1rem; font-size: 0.78rem;
+                   overflow-x: auto; margin-top: 0.5rem; line-height: 1.5; }
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #fff;
+               border-top-color: transparent; border-radius: 50%;
+               animation: spin 0.7s linear infinite; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-box { background: #fee2e2; border: 1px solid #fca5a5; border-radius: 6px;
+                 padding: 0.75rem; color: #991b1b; font-size: 0.875rem; }
+  </style>
+</head>
+<body>
+
+<h1>Support Ticket Triage</h1>
+<p class="subtitle">Powered by Groq (Llama 3.3) · Draft replies for agent review only — never auto-sent</p>
+
+<div class="card">
+  <label for="sample-select">Load a sample ticket</label>
+  <select id="sample-select">
+    <option value="">— choose a sample —</option>
+  </select>
+
+  <div class="gap">
+    <label for="ticket-input">Or paste ticket text</label>
+    <textarea id="ticket-input" placeholder="Paste the email / ticket body here…"></textarea>
+  </div>
+
+  <div class="gap">
+    <button id="submit-btn" onclick="processTicket()">Analyze Ticket</button>
+  </div>
+</div>
+
+<div id="result" class="card">
+  <div id="result-content"></div>
+</div>
+
+<script>
+  const SAMPLES = {{ samples_json | safe }};
+
+  const sampleSelect = document.getElementById("sample-select");
+  const ticketInput  = document.getElementById("ticket-input");
+  const resultDiv    = document.getElementById("result");
+  const resultContent = document.getElementById("result-content");
+  const submitBtn    = document.getElementById("submit-btn");
+
+  // Populate sample dropdown
+  Object.entries(SAMPLES).forEach(([key, val]) => {
+    const opt = document.createElement("option");
+    opt.value = key;
+    opt.textContent = val.label;
+    sampleSelect.appendChild(opt);
+  });
+
+  sampleSelect.addEventListener("change", () => {
+    const key = sampleSelect.value;
+    if (key && SAMPLES[key]) ticketInput.value = SAMPLES[key].text;
+  });
+
+  async function processTicket() {
+    const text = ticketInput.value.trim();
+    if (!text) { alert("Please enter ticket text."); return; }
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner"></span> Analyzing…';
+    resultDiv.style.display = "none";
+
+    try {
+      const res = await fetch("/process", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticket_text: text }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        resultContent.innerHTML = `<div class="error-box">Error: ${data.detail || "Unknown error"}</div>`;
+      } else {
+        resultContent.innerHTML = renderResult(data);
+      }
+
+      resultDiv.style.display = "block";
+    } catch (e) {
+      resultContent.innerHTML = `<div class="error-box">Network error: ${e.message}</div>`;
+      resultDiv.style.display = "block";
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Analyze Ticket";
+    }
+  }
+
+  function badge(cls, text) {
+    return `<span class="badge badge-${cls}">${text}</span>`;
+  }
+
+  function renderResult(d) {
+    const catBadge  = badge(d.category, d.category.replace("_", " "));
+    const urgBadge  = badge(d.urgency, d.urgency);
+    const escBadge  = d.needs_escalation
+      ? badge("escalate", "Escalate")
+      : badge("ok", "No escalation");
+    const pct = Math.round(d.confidence * 100);
+    const tags = (d.suggested_tags || []).map(t => `<span class="tag">${t}</span>`).join("");
+    const flagsHtml = d.flags.low_confidence
+      ? `<div class="flags-box">⚠️ Low confidence (${pct}%) — recommend human review before sending draft.</div>`
+      : "";
+    const escHtml = d.needs_escalation && d.escalation_reason
+      ? `<div class="section-title" style="margin-top:1rem">Escalation reason</div>
+         <div class="escalation-box">🔺 ${d.escalation_reason}</div>`
+      : "";
+
+    const jsonStr = JSON.stringify(d, null, 2);
+
+    return `
+      <div class="meta-row">
+        ${catBadge} ${urgBadge} ${escBadge}
+        <span style="margin-left:auto;font-size:0.78rem;color:#9ca3af">
+          Confidence ${pct}%
+        </span>
+      </div>
+      <div class="confidence-bar">
+        <div class="confidence-fill" style="width:${pct}%"></div>
+      </div>
+
+      <div class="summary-text" style="margin-top:1rem">${d.summary}</div>
+
+      ${flagsHtml}
+
+      <div class="section-title" style="margin-top:1rem">Draft reply (agent edits before sending)</div>
+      <div class="draft-box">${d.draft_reply}</div>
+
+      ${escHtml}
+
+      ${tags ? `<div class="section-title" style="margin-top:1rem">Tags</div><div class="tags">${tags}</div>` : ""}
+
+      <button class="json-toggle" onclick="toggleJson(this)">Show raw JSON ▾</button>
+      <pre class="json-raw">${escapeHtml(jsonStr)}</pre>
+    `;
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  function toggleJson(btn) {
+    const pre = btn.nextElementSibling;
+    const hidden = pre.style.display === "none" || pre.style.display === "";
+    pre.style.display = hidden ? "block" : "none";
+    btn.textContent = hidden ? "Hide raw JSON ▴" : "Show raw JSON ▾";
+  }
+</script>
+</body>
+</html>
